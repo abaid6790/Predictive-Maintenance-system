@@ -1,0 +1,27 @@
+{
+  "accuracy": 0.9875,
+  "f1_score": 0.7933884297520661,
+  "roc_auc": 0.975018268176836,
+  "failure_rate": 0.0339,
+  "n_samples": 10000,
+  "feature_importances": {
+    "Torque [Nm]": 0.21019113323513205,
+    "Rotational speed [rpm]": 0.20764327314292513,
+    "Power": 0.1938937833245454,
+    "Tool wear [min]": 0.191404054826624,
+    "Temp_diff": 0.08734866989376794,
+    "Air temperature [K]": 0.06142526472534346,
+    "Process temperature [K]": 0.03671672106586275,
+    "Type": 0.011377099785799143
+  },
+  "feature_cols": [
+    "Type",
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]",
+    "Temp_diff",
+    "Power"
+  ]
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MACHINE WATCH — Predictive Maintenance Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="console">
+
+  <!-- ===== Top bar ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◆</span>
+      <span class="brand-name">MACHINE&nbsp;WATCH</span>
+    </div>
+    <div class="topbar-meta">
+      <span class="meta-item">MODEL: RandomForest<span class="dot"></span></span>
+      <span class="meta-item">
+        {% if model_ready %}
+          STATUS: <span class="status-ok">ONLINE</span>
+        {% else %}
+          STATUS: <span class="status-danger">MODEL NOT TRAINED</span>
+        {% endif %}
+      </span>
+    </div>
+  </header>
+
+  {% if not model_ready %}
+  <div class="warning-banner">
+    ⚠ No trained model found. Run <code>python train_model.py</code> first, then reload this page.
+  </div>
+  {% endif %}
+
+  <div class="layout">
+
+    <!-- ===== Left: control panel ===== -->
+    <aside class="panel controls">
+      <h2 class="panel-title"><span class="panel-index">01</span> Sensor Input</h2>
+
+      <div class="field">
+        <label for="type">Product Quality Type</label>
+        <select id="type">
+          <option value="L">L — Low</option>
+          <option value="M" selected>M — Medium</option>
+          <option value="H">H — High</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="air_temp">Air Temperature <span class="unit">[K]</span></label>
+        <input type="range" id="air_temp" min="295" max="305" step="0.1" value="298.5">
+        <div class="readout" id="air_temp_val">298.5</div>
+      </div>
+
+      <div class="field">
+        <label for="process_temp">Process Temperature <span class="unit">[K]</span></label>
+        <input type="range" id="process_temp" min="305" max="315" step="0.1" value="308.6">
+        <div class="readout" id="process_temp_val">308.6</div>
+      </div>
+
+      <div class="field">
+        <label for="rpm">Rotational Speed <span class="unit">[rpm]</span></label>
+        <input type="range" id="rpm" min="1150" max="2900" step="1" value="1500">
+        <div class="readout" id="rpm_val">1500</div>
+      </div>
+
+      <div class="field">
+        <label for="torque">Torque <span class="unit">[Nm]</span></label>
+        <input type="range" id="torque" min="3" max="77" step="0.1" value="40.0">
+        <div class="readout" id="torque_val">40.0</div>
+      </div>
+
+      <div class="field">
+        <label for="tool_wear">Tool Wear <span class="unit">[min]</span></label>
+        <input type="range" id="tool_wear" min="0" max="253" step="1" value="90">
+        <div class="readout" id="tool_wear_val">90</div>
+      </div>
+
+      <button id="predict_btn" class="run-btn">Run Diagnostic</button>
+    </aside>
+
+    <!-- ===== Center: gauge ===== -->
+    <main class="panel gauge-panel">
+      <h2 class="panel-title"><span class="panel-index">02</span> Failure Probability</h2>
+
+      <div class="gauge-wrap">
+        <svg viewBox="0 0 240 150" class="gauge-svg" id="gauge_svg">
+          <!-- tick arc background -->
+          <path d="M 20 130 A 100 100 0 0 1 220 130" fill="none" stroke="#2B333C" stroke-width="14" stroke-linecap="round"/>
+          <path id="gauge_arc" d="M 20 130 A 100 100 0 0 1 220 130" fill="none" stroke="#45D8B8" stroke-width="14" stroke-linecap="round" stroke-dasharray="0 315" />
+          <!-- ticks -->
+          <g id="ticks" stroke="#4B5560" stroke-width="2"></g>
+          <line id="needle" x1="120" y1="130" x2="120" y2="45" stroke="#EAF0F4" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="120" cy="130" r="7" fill="#EAF0F4"/>
+        </svg>
+        <div class="gauge-readout">
+          <div class="gauge-number" id="prob_number">--<span class="pct">%</span></div>
+          <div class="gauge-status" id="status_badge">AWAITING INPUT</div>
+        </div>
+      </div>
+
+      <div class="risk-breakdown" id="risk_breakdown">
+        <div class="risk-row" data-key="Tool Wear Failure">
+          <span class="risk-label">Tool Wear</span>
+          <div class="risk-bar"><div class="risk-fill"></div></div>
+          <span class="risk-pct">0%</span>
+        </div>
+        <div class="risk-row" data-key="Heat Dissipation Failure">
+          <span class="risk-label">Heat Dissipation</span>
+          <div class="risk-bar"><div class="risk-fill"></div></div>
+          <span class="risk-pct">0%</span>
+        </div>
+        <div class="risk-row" data-key="Power Failure">
+          <span class="risk-label">Power</span>
+          <div class="risk-bar"><div class="risk-fill"></div></div>
+          <span class="risk-pct">0%</span>
+        </div>
+        <div class="risk-row" data-key="Overstrain Failure">
+          <span class="risk-label">Overstrain</span>
+          <div class="risk-bar"><div class="risk-fill"></div></div>
+          <span class="risk-pct">0%</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== Right: model info ===== -->
+    <aside class="panel model-info">
+      <h2 class="panel-title"><span class="panel-index">03</span> Model Metrics</h2>
+
+      {% if metrics %}
+      <div class="metric-row"><span>Accuracy</span><span class="metric-val">{{ "%.1f"|format(metrics.accuracy * 100) }}%</span></div>
+      <div class="metric-row"><span>F1 Score</span><span class="metric-val">{{ "%.3f"|format(metrics.f1_score) }}</span></div>
+      <div class="metric-row"><span>ROC AUC</span><span class="metric-val">{{ "%.3f"|format(metrics.roc_auc) }}</span></div>
+      <div class="metric-row"><span>Training Samples</span><span class="metric-val">{{ metrics.n_samples }}</span></div>
+      <div class="metric-row"><span>Base Failure Rate</span><span class="metric-val">{{ "%.2f"|format(metrics.failure_rate * 100) }}%</span></div>
+
+      <h3 class="sub-title">Feature Importance</h3>
+      <div class="importance-list">
+        {% for feat, val in metrics.feature_importances.items() %}
+        <div class="imp-row">
+          <span class="imp-label">{{ feat }}</span>
+          <div class="imp-bar"><div class="imp-fill" style="width: {{ (val * 100) | round(1) }}%;"></div></div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="muted">Train the model to see metrics here.</p>
+      {% endif %}
+    </aside>
+
+  </div>
+
+  <footer class="footer">
+    Predictive Maintenance Console — trained on AI4I 2020 dataset — for educational use
+  </footer>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
